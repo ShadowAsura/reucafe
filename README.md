@@ -56,41 +56,6 @@ Located in `/src/components`:
    npm run dev
    ```
 
-## Contributing
-
-### Areas for Contribution
-
-1. **Scrapers**
-   - Improving existing scrapers
-   - Adding new data sources
-   - Enhancing data validation
-
-2. **User Interface**
-   - Enhancing search functionality
-   - Improving accessibility
-   - Adding new filtering options
-
-3. **Features**
-   - Application tracking system
-   - Email notifications
-   - Program analytics
-
-### Development Guidelines
-
-1. **Code Style**
-   - Follow existing code formatting
-   - Use meaningful component and variable names
-   - Add appropriate comments for complex logic
-
-2. **Testing**
-   - Write unit tests for new features
-   - Test across different browsers
-   - Verify mobile responsiveness
-
-3. **Pull Requests**
-   - Create feature-specific branches
-   - Include clear descriptions
-   - Reference related issues
 
 ## Project Structure
 

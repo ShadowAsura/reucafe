@@ -1,4 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { 
   AppBar, 
   Toolbar, 
@@ -10,56 +11,35 @@ import {
   MenuItem, 
   Container,
   Avatar,
-  Drawer,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
-  Divider,
-  Tooltip,
-  Fade
+  Divider
 } from '@mui/material';
 import { 
-  Menu as MenuIcon, 
-  AccountCircle, 
   Home, 
-  School, 
-  Login, 
-  PersonAdd,
-  Logout,
-  Person,
-  Explore,
-  Assessment,
-  NoteAlt
+  School,
+  Brightness4Icon,
+  Brightness7Icon
 } from '@mui/icons-material';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
-// At the top of your Navbar.js file
-// Fix the import path
 import { useAuth } from '../context/AuthContext';
-
+import { ThemeContext } from '../contexts/ThemeContext';
+import { supabase } from '../supabase';
+import './Navbar.css';
 
 const pages = [
   { name: 'Programs', path: '/programs' },
   { name: 'Decisions', path: '/decisions' },
   { name: 'Patch Notes', path: '/patch-notes' },
 ];
-import { ThemeContext } from '../contexts/ThemeContext';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
-import Brightness7Icon from '@mui/icons-material/Brightness7';
-import './Navbar.css';
-import { supabase } from '../supabase';
 
 function Navbar() {
   const { currentUser, logout } = useAuth();
   const [anchorEl, setAnchorEl] = useState(null);
   const [avatarUrl, setAvatarUrl] = useState('');
   const navigate = useNavigate();
-  
-  useEffect(() => {
-    if (currentUser) {
-      fetchUserAvatar();
-    }
-  }, [currentUser]);
+  const [mobileOpen, setMobileOpen] = useState(false);
   
   const fetchUserAvatar = async () => {
     try {
@@ -81,6 +61,12 @@ function Navbar() {
       console.error('Error:', error);
     }
   };
+
+  useEffect(() => {
+    if (currentUser) {
+      fetchUserAvatar();
+    }
+  }, [currentUser]);
   
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
@@ -101,49 +87,14 @@ function Navbar() {
     navigate('/');
   };
   
-  const { darkMode, toggleDarkMode } = useContext(ThemeContext);
-  
-  const [mobileOpen, setMobileOpen] = useState(false);
-  
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
-  
   
   const menuItems = [
     { text: 'Programs', path: '/programs', icon: <School /> },
     { text: 'Patch Notes', path: '/patch-notes', icon: <Home /> }
   ];
-  
-  const drawer = (
-    <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center' }}>
-      <Typography variant="h6" sx={{ my: 2 }}>
-        REU Cafe
-      </Typography>
-      <Divider />
-      <List>
-        {menuItems.map((item) => (
-          <ListItem 
-            button 
-            component={RouterLink} 
-            to={item.path} 
-            key={item.text}
-          >
-            <ListItemIcon>{item.icon}</ListItemIcon>
-            <ListItemText primary={item.text} />
-          </ListItem>
-        ))}
-      </List>
-    </Box>
-  );
-
-  // Update the pages array to include Programs
-    const pages = [
-      { name: 'Programs', path: '/programs' },
-      { name: 'Decisions', path: '/decisions' },
-      { name: 'Patch Notes', path: '/patch-notes' },
-      // Add other navigation items as needed
-    ];
 
   return (
     <AppBar 

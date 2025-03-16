@@ -17,9 +17,7 @@ import Profile from './pages/Profile';
 import Decisions from './pages/Decisions';
 import NotFound from './pages/NotFound';
 import { AuthProvider } from './context/AuthContext';
-import { ThemeContext } from './contexts/ThemeContext';
 import { ReuProvider } from './context/ReuContext';
-// No need for AudioContext import
 
 // Fresh theme with vibrant colors
 const theme = createTheme({

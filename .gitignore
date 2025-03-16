@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Environment and secrets
+.env
+.env.*
+.env.local
+.env.development
+.env.test
+.env.production
+/server/.env
+/scripts/reu-cafe-*.json
+
+# Firebase config
+/server/config/firebase-service-account.json
+
+# Supabase config
+/config/supabase.json
+.supabase/
+
+# Build and cache
+/build
+/.netlify
+.cache
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
+/temp/

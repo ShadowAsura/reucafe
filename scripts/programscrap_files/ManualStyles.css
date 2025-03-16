@@ -1,0 +1,54 @@
+h1.mnl-pagehead{
+	font-size:12pt;
+	font-weight:bold;
+	color:#205499;
+}
+
+.mnl-body{
+	background-color: #343440;
+	margin: 0px 0 50 0px;
+	padding: 10px 0 0px 0px;
+	border: 0;
+	font-size: 9pt;
+	line-height:150%;
+	color: black;
+	text-align: center; /*to correct the centering IE bug of centering the container div*/
+}
+
+
+blockquote.mnl-bq{
+	background-color: #E5EFFF; 
+	border: 1px solid #ccc; 
+	padding: 10px;
+}
+
+h2.mnl-sectionhead{
+	font-size: 11pt;
+	color:#018DAD;
+}
+
+h2.mnl-topichead{
+	font-size: 11pt;
+	color:#333333;
+}
+
+h2.mnl-subtopichead{
+	font-size:10pt;
+	color: #1D2482; /*#2D2D5B;*/
+	text-decoration:none;
+}
+
+.mnl-subhead1{
+	font-size:9pt;	
+	font-weight:bold;
+}
+
+.mnl-subhead2{
+	font-size:9pt;	
+	text-transform:uppercase;
+}
+
+p.mnl-indent{
+        padding-left:20px;
+	height:auto;
+}

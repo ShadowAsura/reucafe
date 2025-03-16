@@ -1,0 +1,16 @@
+/* Navbar styles */
+.navbar-brand {
+  text-decoration: none;
+  color: white;
+  font-weight: 600;
+}
+
+.navbar-link {
+  margin-left: 1rem;
+  text-decoration: none;
+  color: white;
+}
+
+.theme-toggle {
+  margin-right: 1rem;
+}

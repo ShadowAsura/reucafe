@@ -214,7 +214,7 @@ function Navbar() {
               <Button 
                 color="inherit" 
                 component={RouterLink} 
-                to="/signup"
+                to="/register"
                 variant="outlined"
               >
                 Sign Up

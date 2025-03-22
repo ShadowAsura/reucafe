@@ -1,56 +1,47 @@
 import React from 'react';
-import { Box } from '@mui/material';
+import styled from '@emotion/styled';
+
+const BackgroundContainer = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+  z-index: -1;
+  overflow: hidden;
+`;
+
+const AnimatedCircle = styled.circle`
+  fill: rgba(255, 255, 255, 0.1);
+  animation: float 20s infinite ease-in-out;
+  
+  @keyframes float {
+    0%, 100% {
+      transform: translate(0, 0);
+    }
+    25% {
+      transform: translate(50px, 50px);
+    }
+    50% {
+      transform: translate(0, 100px);
+    }
+    75% {
+      transform: translate(-50px, 50px);
+    }
+  }
+`;
 
 const AnimatedBackground = () => {
   return (
-    <Box
-      sx={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: -1,
-        overflow: 'hidden',
-        background: 'linear-gradient(45deg, #3f51b5, #2196f3, #00bcd4, #3f51b5)',
-        backgroundSize: '400% 400%',
-        animation: 'gradient 15s ease infinite',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'url("/network-pattern.svg")',
-          opacity: 0.1,
-        },
-        '@keyframes gradient': {
-          '0%': {
-            backgroundPosition: '0% 50%'
-          },
-          '50%': {
-            backgroundPosition: '100% 50%'
-          },
-          '100%': {
-            backgroundPosition: '0% 50%'
-          }
-        }
-      }}
-    >
-      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <pattern id="smallGrid" width="20" height="20" patternUnits="userSpaceOnUse">
-            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
-          </pattern>
-          <pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse">
-            <rect width="100" height="100" fill="url(#smallGrid)" />
-            <path d="M 100 0 L 0 0 0 100" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#grid)" />
+    <BackgroundContainer>
+      <svg width="100%" height="100%" viewBox="0 0 100 100">
+        <AnimatedCircle cx="20" cy="20" r="5" />
+        <AnimatedCircle cx="80" cy="30" r="7" style={{ animationDelay: '-5s' }} />
+        <AnimatedCircle cx="40" cy="70" r="6" style={{ animationDelay: '-10s' }} />
+        <AnimatedCircle cx="60" cy="50" r="4" style={{ animationDelay: '-15s' }} />
       </svg>
-    </Box>
+    </BackgroundContainer>
   );
 };
 

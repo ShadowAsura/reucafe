@@ -1,5 +1,6 @@
 import React from 'react';
-import { Box, Typography, Container, Link } from '@mui/material';
+import { Box, Container, Typography, IconButton, Link } from '@mui/material';
+import { GitHub, Favorite } from '@mui/icons-material';
 
 function Footer() {
   return (
@@ -9,26 +10,46 @@ function Footer() {
         py: 3,
         px: 2,
         mt: 'auto',
-        background: 'linear-gradient(90deg, #1a237e 0%, #3949ab 100%)',
-        color: 'white',
-        boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
+        backgroundColor: (theme) =>
+          theme.palette.mode === 'light'
+            ? theme.palette.grey[200]
+            : theme.palette.grey[800],
       }}
     >
       <Container maxWidth="sm">
-        <Typography variant="body1" align="center" sx={{ fontWeight: 500 }}>
-          © {new Date().getFullYear()} REU Cafe
-        </Typography>
-        <Typography variant="body2" color="rgba(255,255,255,0.8)" align="center" sx={{ mt: 1 }}>
-          <Link color="inherit" href="/" sx={{ transition: 'all 0.2s ease', '&:hover': { color: '#FF5722' } }}>
-            Home
-          </Link>{' | '}
-          <Link color="inherit" href="/programs" sx={{ transition: 'all 0.2s ease', '&:hover': { color: '#FF5722' } }}>
-            Programs
-          </Link>{' | '}
-          <Link color="inherit" href="/decisions" sx={{ transition: 'all 0.2s ease', '&:hover': { color: '#FF5722' } }}>
-            Decisions
-          </Link>
-        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <Typography variant="body2" color="text.secondary" align="center">
+            Made with <Favorite sx={{ color: 'error.main', fontSize: 16, mx: 0.5 }} /> by{' '}
+            <Link
+              href="https://github.com/ShadowAsura"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ textDecoration: 'none' }}
+            >
+              ShadowAsura
+            </Link>
+          </Typography>
+          <Box sx={{ mt: 1 }}>
+            <IconButton
+              href="https://github.com/ShadowAsura/reucafe"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                color: 'text.secondary',
+                '&:hover': {
+                  color: 'primary.main',
+                  transform: 'scale(1.1)',
+                  transition: 'all 0.2s ease-in-out'
+                }
+              }}
+            >
+              <GitHub />
+            </IconButton>
+          </Box>
+          <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 1 }}>
+            © {new Date().getFullYear()} REUCafe. All rights reserved.
+          </Typography>
+        </Box>
       </Container>
     </Box>
   );

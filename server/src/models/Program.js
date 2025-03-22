@@ -50,6 +50,10 @@ const ProgramSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  url: {
+    type: String,
+    trim: true
+  },
   applicationLink: {
     type: String,
     trim: true

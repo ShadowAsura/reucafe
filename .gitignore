@@ -42,3 +42,7 @@ Thumbs.db
 *.tmp
 *.temp
 /temp/
+
+# Admin files
+src/components/AdminConsole.js
+src/utils/adminCheck.js

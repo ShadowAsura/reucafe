@@ -1,61 +1,68 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, Box } from '@mui/material';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import Home from './pages/Home';
-import Programs from './pages/Programs';
-import ProgramDetail from './pages/ProgramDetail';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Results from './pages/Results';
-import SubmitResult from './pages/SubmitResult';
-import SuggestProgram from './pages/SuggestProgram';
-import PatchNotes from './pages/PatchNotes';
-import Profile from './pages/Profile';
-import Decisions from './pages/Decisions';
-import NotFound from './pages/NotFound';
+import { Box, ThemeProvider, CssBaseline } from '@mui/material';
+import { ThemeContext } from './contexts/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { ReuProvider } from './context/ReuContext';
+import Navbar from './components/layout/Navbar';
+import Footer from './components/Footer';
+import FloatingPatchNotes from './components/FloatingPatchNotes';
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Programs from './pages/Programs';
+import ProgramDetail from './pages/ProgramDetail';
+import Decisions from './pages/Decisions';
+import DecisionDetail from './pages/DecisionDetail';
+import Applications from './pages/Applications';
+import PrivateRoute from './components/PrivateRoute';
+import Profile from './pages/Profile';
+import { createTheme } from '@mui/material/styles';
 
-// Fresh theme with vibrant colors
 const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1a237e', // Deep blue for primary color
-      contrastText: '#ffffff',
-    },
-    secondary: {
-      main: '#FF5722', // Bright orange for accent color
-      contrastText: '#ffffff',
-    },
-    background: {
-      default: '#f5f5f5',
-      paper: '#ffffff',
-    },
-  },
   typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
     h1: {
       fontWeight: 700,
+      fontSize: '2.5rem',
     },
     h2: {
       fontWeight: 600,
+      fontSize: '2rem',
     },
     h3: {
       fontWeight: 600,
+      fontSize: '1.75rem',
     },
-    button: {
-      textTransform: 'none',
-      fontWeight: 500,
+    h4: {
+      fontWeight: 600,
+      fontSize: '1.5rem',
+    },
+    h5: {
+      fontWeight: 600,
+      fontSize: '1.25rem',
+    },
+    h6: {
+      fontWeight: 600,
+      fontSize: '1rem',
+    },
+    body1: {
+      fontSize: '1rem',
+      lineHeight: 1.5,
+    },
+    body2: {
+      fontSize: '0.875rem',
+      lineHeight: 1.43,
     },
   },
   components: {
     MuiButton: {
       styleOverrides: {
         root: {
+          textTransform: 'none',
           borderRadius: 8,
+          padding: '8px 16px',
+          fontWeight: 500,
         },
       },
     },
@@ -63,7 +70,14 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 12,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
         },
       },
     },
@@ -72,45 +86,51 @@ const theme = createTheme({
 
 function App() {
   return (
-    <AuthProvider>
-      <ReuProvider>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-          <div style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            minHeight: '100vh',
-            overflow: 'auto' // Add this to enable scrolling
-          }}>
-            <Navbar />
-            <Box 
-              component="main" 
-              sx={{ 
-                flexGrow: 1,
-                overflow: 'auto', // Enable scrolling in the main content area
-                paddingBottom: 4 // Add some padding at the bottom
-              }}
-            >
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/programs" element={<Programs />} />
-                <Route path="/programs/:id" element={<ProgramDetail />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/decisions" element={<Decisions />} />
-                <Route path="/suggest" element={<SuggestProgram />} />
-                <Route path="/results" element={<Results />} />
-                <Route path="/submit-result" element={<SubmitResult />} />
-                <Route path="/patch-notes" element={<PatchNotes />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+    <ThemeContext.Provider value={{ theme }}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <AuthProvider>
+          <ReuProvider>
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: 'column',
+              minHeight: '100vh'
+            }}>
+              <Navbar />
+              <Box component="main" sx={{ flexGrow: 1 }}>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/programs" element={<Programs />} />
+                  <Route path="/programs/:id" element={<ProgramDetail />} />
+                  <Route path="/decisions" element={<Decisions />} />
+                  <Route path="/decisions/:id" element={<DecisionDetail />} />
+                  <Route 
+                    path="/applications" 
+                    element={
+                      <PrivateRoute>
+                        <Applications />
+                      </PrivateRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/profile" 
+                    element={
+                      <PrivateRoute>
+                        <Profile />
+                      </PrivateRoute>
+                    } 
+                  />
+                </Routes>
+              </Box>
+              <Footer />
+              <FloatingPatchNotes />
             </Box>
-            <Footer />
-          </div>
-        </ThemeProvider>
-      </ReuProvider>
-    </AuthProvider>
+          </ReuProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ThemeContext.Provider>
   );
 }
 

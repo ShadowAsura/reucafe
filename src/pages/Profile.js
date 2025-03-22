@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabase';
+import { setupStorage } from '../utils/supabaseStorage';
 
 function Profile() {
   const { currentUser } = useAuth();
@@ -32,7 +33,16 @@ function Profile() {
 
   useEffect(() => {
     if (currentUser) {
-      // First, check if the profiles table exists and get its structure
+      // Set up storage when component mounts
+      setupStorage().catch(error => {
+        console.error('Error setting up storage:', error);
+        setMessage({
+          type: 'warning',
+          text: 'Avatar upload may not be available. Please contact support if you need to upload an avatar.'
+        });
+      });
+      
+      // Check if the profiles table exists and get its structure
       checkProfilesTable();
     }
   }, [currentUser]);
@@ -246,72 +256,99 @@ function Profile() {
     }
   };
 
-  const handleAvatarUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file || !profileId) return;
-    
+  const handleAvatarUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      return;
+    }
+
     try {
       setLoading(true);
       setMessage({ type: '', text: '' });
-      
-      // Create a more unique filename
+
+      // Create a unique filename using the current user's ID
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const fileName = `${currentUser.id}-${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
-      
-      console.log("Uploading file to path:", filePath);
-      
-      // Upload file to Supabase Storage
+
+      console.log('Starting upload process...');
+      console.log('File details:', {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        path: filePath,
+        userId: currentUser.id
+      });
+
+      // Upload the file
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: true
+          upsert: false
         });
-      
+
       if (uploadError) {
-        console.error("Upload error details:", uploadError);
+        console.error('Upload error:', uploadError);
         throw uploadError;
       }
-      
-      console.log("Upload successful:", uploadData);
-      
-      // Get public URL
-      const { data } = supabase.storage
+
+      console.log('Upload successful:', uploadData);
+
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
-      
-      const avatarUrl = data.publicUrl;
-      console.log("Avatar URL:", avatarUrl);
-      
-      // Update profile with new avatar URL
-      const { error: updateError } = await supabase
+
+      console.log('Public URL:', publicUrl);
+
+      // Update the avatar_url in the profiles table using the current user's ID
+      const { data: updateData, error: updateError } = await supabase
         .from('profiles')
-        .update({ avatar_url: avatarUrl })
-        .eq('id', profileId);
-      
+        .update({ avatar_url: publicUrl })
+        .eq('id', currentUser.id)
+        .select();
+
       if (updateError) {
-        console.error("Avatar update error:", updateError);
+        console.error('Profile update error:', updateError);
         throw updateError;
       }
-      
-      console.log("Avatar URL updated in profile");
-      
+
+      if (!updateData || updateData.length === 0) {
+        console.error('No profile found with ID:', currentUser.id);
+        throw new Error('Profile not found. Please try refreshing the page.');
+      }
+
+      console.log('Profile updated successfully:', updateData[0]);
+
       // Update local state
       setFormData(prev => ({
         ...prev,
-        avatar_url: avatarUrl
+        avatar_url: publicUrl
       }));
-      
+
+      // Dispatch event to refresh profile in Navbar
+      window.dispatchEvent(new Event('profileUpdated'));
+
       setMessage({
         type: 'success',
-        text: 'Profile picture updated successfully!'
+        text: 'Avatar updated successfully!'
       });
     } catch (error) {
       console.error('Error uploading avatar:', error);
       setMessage({
         type: 'error',
-        text: error.message || 'Failed to upload profile picture'
+        text: error.message || 'Error uploading avatar'
       });
     } finally {
       setLoading(false);

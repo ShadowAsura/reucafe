@@ -54,11 +54,14 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { useContext } from 'react';
 import { ThemeContext } from '../contexts/ThemeContext';
 import { useReu } from '../context/ReuContext';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../supabase';
 
 function Programs() {
   const navigate = useNavigate();
   const { darkMode } = useContext(ThemeContext);
   const { programs: reuPrograms, loading: reuLoading, error: reuError } = useReu();
+  const { currentUser } = useAuth();
   // Removed modal state variables as they're no longer needed
   const [programs, setPrograms] = useState([]);
   const [filteredPrograms, setFilteredPrograms] = useState([]);
@@ -76,6 +79,8 @@ function Programs() {
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25); // Changed to 25 programs per page for better usability
   const [availableFields, setAvailableFields] = useState(['all']);
+  const [availableLocations, setAvailableLocations] = useState(['all']);
+  const [availableInstitutions, setAvailableInstitutions] = useState(['all']);
   const [activeFilters, setActiveFilters] = useState([]);
 
   // Debounce search term to avoid filtering on every keystroke
@@ -746,6 +751,59 @@ function Programs() {
                         <Typography variant="body1">{program.location}</Typography>
                       </Box>
                     )}
+                  </Box>
+
+                  {/* Add to Applications Button */}
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                    <Button
+                      variant="contained"
+                      onClick={() => {
+                        if (!currentUser) {
+                          navigate('/login');
+                          return;
+                        }
+                        const applicationData = {
+                          program_name: program.title,
+                          university: program.institution,
+                          deadline: program.rawDeadline,
+                          status: 'Not Started',
+                          decision: 'Pending',
+                          notes: `${program.description || ''}
+
+URL: ${program.url || 'Not provided'}
+Stipend: ${program.stipend || 'Not specified'}
+Duration: ${program.duration || 'Not specified'}`
+                        };
+                        const { error } = await supabase
+                          .from('applications')
+                          .insert([{
+                            ...applicationData,
+                            user_id: currentUser.id,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                          }]);
+                        
+                        if (error) {
+                          console.error('Error adding to applications:', error);
+                          return;
+                        }
+                        
+                        // Show success message or notification
+                        alert('Program added to your applications!');
+                      }}
+                      sx={{
+                        background: 'linear-gradient(45deg, #1a237e 30%, #ff3d00 90%)',
+                        color: 'white',
+                        '&:hover': {
+                          background: 'linear-gradient(45deg, #0d47a1 30%, #dd2c00 90%)',
+                          transform: 'scale(1.05)'
+                        },
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 3px 5px 2px rgba(26, 35, 126, 0.3)'
+                      }}
+                    >
+                      Add to Applications
+                    </Button>
                   </Box>
 
                   {/* Fields Display */}

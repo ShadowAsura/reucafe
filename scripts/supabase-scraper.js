@@ -71,7 +71,10 @@ const saveToSupabase = async (programs, source) => {
       if (program.deadline instanceof Date) {
         deadlineStr = program.deadline.toISOString();
       } else if (typeof program.deadline === 'string') {
-        deadlineStr = program.deadline;
+        const date = new Date(program.deadline);
+        if (!isNaN(date.getTime())) {
+          deadlineStr = date.toISOString();
+        }
       }
     }
   

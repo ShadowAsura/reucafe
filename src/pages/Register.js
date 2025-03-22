@@ -126,7 +126,7 @@ function Register() {
             .from('profiles')
             .insert([{
               id: user.id,
-              avatar_url: '',
+              avatar_url: null,
               username: formData.username,
               updated_at: new Date().toISOString()
             }]);

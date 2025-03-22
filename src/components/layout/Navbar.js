@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { 
   AppBar, 
@@ -11,29 +11,61 @@ import {
   Box,
   Container,
   Avatar,
-  Drawer,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Divider
+  styled
 } from '@mui/material';
 import { 
-  Menu as MenuIcon, 
-  AccountCircle, 
-  School, 
-  Forum, 
-  Search, 
-  Add,
-  Logout
+  AccountCircle,
+  School,
+  Assessment,
+  Assignment,
+  Login,
+  PersonAdd
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../supabase';
+
+const StyledButton = styled(Button)(({ theme }) => ({
+  color: 'white',
+  position: 'relative',
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    bottom: 0,
+    left: '50%',
+    width: '0%',
+    height: '2px',
+    background: 'linear-gradient(45deg, #ff3d00, #ff6d00)',
+    transition: 'all 0.3s ease',
+    transform: 'translateX(-50%)',
+  },
+  '&:hover::after': {
+    width: '100%',
+  }
+}));
 
 function Navbar() {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileImage, setProfileImage] = useState(null);
+
+  useEffect(() => {
+    const fetchProfileImage = async () => {
+      if (currentUser) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', currentUser.id)
+          .single();
+
+        if (data && data.avatar_url) {
+          setProfileImage(data.avatar_url);
+        }
+      }
+    };
+
+    fetchProfileImage();
+  }, [currentUser]);
 
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
@@ -41,10 +73,6 @@ function Navbar() {
 
   const handleClose = () => {
     setAnchorEl(null);
-  };
-
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
   };
 
   const handleLogout = async () => {
@@ -57,196 +85,149 @@ function Navbar() {
     handleClose();
   };
 
-  const drawer = (
-    <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center' }}>
-      <Typography variant="h6" sx={{ my: 2 }}>
-        REU Cafe
-      </Typography>
-      <Divider />
-      <List>
-        <ListItem button component={RouterLink} to="/">
-          <ListItemText primary="Home" />
-        </ListItem>
-        <ListItem button component={RouterLink} to="/results">
-          <ListItemIcon>
-            <Search />
-          </ListItemIcon>
-          <ListItemText primary="Results" />
-        </ListItem>
-        <ListItem button component={RouterLink} to="/programs">
-          <ListItemIcon>
-            <School />
-          </ListItemIcon>
-          <ListItemText primary="Programs" />
-        </ListItem>
-        <ListItem button component={RouterLink} to="/forums">
-          <ListItemIcon>
-            <Forum />
-          </ListItemIcon>
-          <ListItemText primary="Forums" />
-        </ListItem>
-        <ListItem button component={RouterLink} to="/submit-result">
-          <ListItemIcon>
-            <Add />
-          </ListItemIcon>
-          <ListItemText primary="Submit Result" />
-        </ListItem>
-        {!currentUser ? (
-          <>
-            <ListItem button component={RouterLink} to="/login">
-              <ListItemText primary="Login" />
-            </ListItem>
-            <ListItem button component={RouterLink} to="/register">
-              <ListItemText primary="Register" />
-            </ListItem>
-          </>
-        ) : (
-          <>
-            <ListItem button component={RouterLink} to="/profile">
-              <ListItemIcon>
-                <AccountCircle />
-              </ListItemIcon>
-              <ListItemText primary="Profile" />
-            </ListItem>
-            <ListItem button onClick={handleLogout}>
-              <ListItemIcon>
-                <Logout />
-              </ListItemIcon>
-              <ListItemText primary="Logout" />
-            </ListItem>
-          </>
-        )}
-      </List>
-    </Box>
-  );
-
   return (
-    <>
-      <AppBar position="static">
-        <Container maxWidth="lg">
-          <Toolbar>
-            <IconButton
-              color="inherit"
-              aria-label="open drawer"
-              edge="start"
-              onClick={handleDrawerToggle}
-              sx={{ mr: 2, display: { sm: 'none' } }}
-            >
-              <MenuIcon />
-            </IconButton>
+    <AppBar 
+      position="static" 
+      sx={{ 
+        background: 'linear-gradient(45deg, #1a237e 30%, #0d47a1 90%)',
+        boxShadow: '0 3px 5px 2px rgba(26, 35, 126, 0.3)'
+      }}
+    >
+      <Container maxWidth="lg">
+        <Toolbar>
+          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
             <Typography
               variant="h6"
               component={RouterLink}
               to="/"
               sx={{
-                flexGrow: 1,
                 textDecoration: 'none',
                 color: 'inherit',
-                display: { xs: 'none', sm: 'block' }
+                fontWeight: 'bold',
+                mr: 4
               }}
             >
               REU Cafe
             </Typography>
             
-            <Box sx={{ display: { xs: 'none', sm: 'flex' } }}>
-              <Button color="inherit" component={RouterLink} to="/results">
-                Results
-              </Button>
-              <Button color="inherit" component={RouterLink} to="/programs">
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <StyledButton color="inherit" component={RouterLink} to="/programs">
+                <School sx={{ mr: 1 }} />
                 Programs
-              </Button>
-              <Button color="inherit" component={RouterLink} to="/forums">
-                Forums
-              </Button>
-              <Button color="inherit" component={RouterLink} to="/submit-result">
-                Submit Result
-              </Button>
+              </StyledButton>
+              <StyledButton color="inherit" component={RouterLink} to="/decisions">
+                <Assessment sx={{ mr: 1 }} />
+                Decisions
+              </StyledButton>
+              <StyledButton color="inherit" component={RouterLink} to="/applications">
+                <Assignment sx={{ mr: 1 }} />
+                Applications
+              </StyledButton>
               {currentUser?.role === 'admin' && (
-                <Button color="inherit" component={RouterLink} to="/admin">
-                  Admin Dashboard
-                </Button>
+                <StyledButton color="inherit" component={RouterLink} to="/admin">
+                  Admin Console
+                </StyledButton>
               )}
             </Box>
-            {!currentUser ? (
-              <Box>
-                <Button color="inherit" component={RouterLink} to="/login">
-                  Login
-                </Button>
-                <Button color="inherit" component={RouterLink} to="/register">
-                  Register
-                </Button>
-              </Box>
-            ) : (
-              <Box>
-                <IconButton
-                  aria-label="account of current user"
-                  aria-controls="menu-appbar"
-                  aria-haspopup="true"
-                  onClick={handleMenu}
-                  color="inherit"
-                >
-                  {currentUser.photoURL ? (
-                    <Avatar src={currentUser.photoURL} alt={currentUser.displayName} />
-                  ) : (
-                    <AccountCircle />
-                  )}
-                </IconButton>
-                <Menu
-                  id="menu-appbar"
-                  anchorEl={anchorEl}
-                  anchorOrigin={{
-                    vertical: 'top',
-                    horizontal: 'right',
-                  }}
-                  keepMounted
-                  transformOrigin={{
-                    vertical: 'top',
-                    horizontal: 'right',
-                  }}
-                  open={Boolean(anchorEl)}
-                  onClose={handleClose}
-                >
-                  <MenuItem 
-                    onClick={() => {
-                      handleClose();
-                      navigate('/profile');
+          </Box>
+
+          {currentUser ? (
+            <Box sx={{ position: 'relative' }}>
+              <IconButton
+                aria-label="account of current user"
+                aria-controls="menu-appbar"
+                aria-haspopup="true"
+                onClick={handleMenu}
+                color="inherit"
+                sx={{ 
+                  padding: 1,
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                  }
+                }}
+              >
+                {profileImage ? (
+                  <Avatar 
+                    src={profileImage} 
+                    alt={currentUser.displayName}
+                    sx={{ 
+                      width: 40, 
+                      height: 40,
+                      border: '2px solid #ff3d00'
                     }}
-                  >
-                    Profile
-                  </MenuItem>
-                  {currentUser?.role === 'admin' && (
-                    <MenuItem 
-                      onClick={() => {
-                        handleClose();
-                        navigate('/admin');
-                      }}
-                    >
-                      Admin Dashboard
-                    </MenuItem>
-                  )}
-                  <MenuItem onClick={handleLogout}>Logout</MenuItem>
-                </Menu>
-              </Box>
-            )}
-          </Toolbar>
-        </Container>
-      </AppBar>
-      
-      <Drawer
-        variant="temporary"
-        open={mobileOpen}
-        onClose={handleDrawerToggle}
-        ModalProps={{
-          keepMounted: true, // Better open performance on mobile
-        }}
-        sx={{
-          display: { xs: 'block', sm: 'none' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: 240 },
-        }}
-      >
-        {drawer}
-      </Drawer>
-    </>
+                  />
+                ) : (
+                  <AccountCircle sx={{ fontSize: 40 }} />
+                )}
+              </IconButton>
+              <Menu
+                id="menu-appbar"
+                anchorEl={anchorEl}
+                anchorOrigin={{
+                  vertical: 'bottom',
+                  horizontal: 'right',
+                }}
+                keepMounted
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
+                open={Boolean(anchorEl)}
+                onClose={handleClose}
+                sx={{
+                  mt: 1,
+                  '& .MuiPaper-root': {
+                    borderRadius: 2,
+                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
+                  }
+                }}
+              >
+                <MenuItem 
+                  onClick={() => {
+                    handleClose();
+                    navigate('/profile');
+                  }}
+                  sx={{ py: 1.5 }}
+                >
+                  Profile
+                </MenuItem>
+                <MenuItem 
+                  onClick={handleLogout}
+                  sx={{ py: 1.5 }}
+                >
+                  Logout
+                </MenuItem>
+              </Menu>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <StyledButton
+                color="inherit"
+                component={RouterLink}
+                to="/login"
+                startIcon={<Login />}
+              >
+                Login
+              </StyledButton>
+              <StyledButton
+                color="inherit"
+                component={RouterLink}
+                to="/signup"
+                startIcon={<PersonAdd />}
+                sx={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.2)'
+                  }
+                }}
+              >
+                Sign Up
+              </StyledButton>
+            </Box>
+          )}
+        </Toolbar>
+      </Container>
+    </AppBar>
   );
 }
 

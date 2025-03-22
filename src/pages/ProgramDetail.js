@@ -10,7 +10,13 @@ import {
   Button, 
   Divider,
   CircularProgress,
-  Alert
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  MenuItem
 } from '@mui/material';
 import { supabase } from '../supabase';
 import { useAuth } from '../context/AuthContext';
@@ -18,11 +24,24 @@ import { useAuth } from '../context/AuthContext';
 function ProgramDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { currentUser: user } = useAuth();
   const [program, setProgram] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(false);
+  const [openTrackerDialog, setOpenTrackerDialog] = useState(false);
+  const [trackerData, setTrackerData] = useState({
+    program_name: '',
+    university: '',
+    deadline: '',
+    status: 'Not Started',
+    decision: 'Pending',
+    notes: '',
+    stipend: '',
+    location: '',
+    duration: '',
+    link: ''
+  });
   
   // Check if program is saved by user
   useEffect(() => {
@@ -49,57 +68,62 @@ function ProgramDetail() {
     const fetchProgram = async () => {
       try {
         setLoading(true);
+        setError(null);
+        console.log('Fetching program with ID:', id);
+        
+        if (!id) {
+          setError('No program ID provided');
+          setLoading(false);
+          return;
+        }
         
         // Fetch program details from Supabase
         const { data, error } = await supabase
           .from('programs')
           .select('*')
-          .eq('id', id);
+          .eq('id', id)
+          .single(); // Use single() instead of checking array length
           
-        if (error) throw error;
-        
-        // Check if we got exactly one result
-        if (data && data.length === 1) {
-          // Use the first (and only) result
-          const programData = data[0];
-          
-          // Create a deep copy of the data to avoid direct mutation
-          const processedData = JSON.parse(JSON.stringify(programData));
-          
-          // Process the description to ensure it's complete and clean
-          if (processedData.description) {
-            // Remove any truncation markers completely
-            processedData.description = processedData.description
-              .replace(/\.\.\.read more/gi, '')
-              .replace(/\.\.\.$/g, '')
-              .replace(/\.\.\./g, '')
-              .replace(/\s*\(read more\)/gi, '')
-              .replace(/read more/gi, '')
-              .trim();
-            
-            // Remove deadline information that might be mixed in with the description
-            processedData.description = processedData.description
-              .replace(/deadline:?\s*[\w\d\s,]+\d{4}/gi, '') // Remove "Deadline: Month Day, Year"
-              .replace(/application\s+deadline:?\s*[\w\d\s,]+\d{4}/gi, '') // Remove "Application Deadline: Month Day, Year"
-              .replace(/due\s+date:?\s*[\w\d\s,]+\d{4}/gi, '') // Remove "Due Date: Month Day, Year"
-              .replace(/applications?\s+due:?\s*[\w\d\s,]+\d{4}/gi, '') // Remove "Applications Due: Month Day, Year"
-              .replace(/date:?\s*[\w\d\s,]+\d{4}/gi, '') // Remove "Date: Month Day, Year"
-              .replace(/\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}/g, '') // Remove date formats like MM/DD/YYYY
-              .replace(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}(st|nd|rd|th)?\s*,?\s*\d{4}\b/gi, '') // Remove month names with dates
-              .trim();
-            
-            // Preserve paragraph breaks but normalize excessive whitespace
-            processedData.description = processedData.description
-              .replace(/\s*\n\s*/g, '\n\n') // Normalize line breaks to double line breaks
-              .replace(/\s+/g, ' ') // Replace multiple spaces with a single space
-              .replace(/\n\n+/g, '\n\n') // Replace multiple consecutive line breaks with just two
-              .trim();
-          }
-          
-          setProgram(processedData);
-        } else {
-          setError('Program not found');
+        if (error) {
+          console.error('Supabase error:', error);
+          setError(error.message || 'Failed to load program details');
+          setLoading(false);
+          return;
         }
+        
+        if (!data) {
+          console.error('No program found');
+          setError('Program not found');
+          setLoading(false);
+          return;
+        }
+        
+        console.log('Fetched program data:', data);
+        
+        // Process the data
+        const processedData = {
+          ...data,
+          description: data.description ? data.description
+            .replace(/\.\.\.read more/gi, '')
+            .replace(/\.\.\.$/g, '')
+            .replace(/\.\.\./g, '')
+            .replace(/\s*\(read more\)/gi, '')
+            .replace(/read more/gi, '')
+            .replace(/deadline:?\s*[\w\d\s,]+\d{4}/gi, '')
+            .replace(/application\s+deadline:?\s*[\w\d\s,]+\d{4}/gi, '')
+            .replace(/due\s+date:?\s*[\w\d\s,]+\d{4}/gi, '')
+            .replace(/applications?\s+due:?\s*[\w\d\s,]+\d{4}/gi, '')
+            .replace(/date:?\s*[\w\d\s,]+\d{4}/gi, '')
+            .replace(/\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}/g, '')
+            .replace(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}(st|nd|rd|th)?\s*,?\s*\d{4}\b/gi, '')
+            .replace(/\s*\n\s*/g, '\n\n')
+            .replace(/\s+/g, ' ')
+            .replace(/\n\n+/g, '\n\n')
+            .trim() : 'No description available.'
+        };
+        
+        console.log('Setting processed program data:', processedData);
+        setProgram(processedData);
       } catch (err) {
         console.error('Error fetching program:', err);
         setError(err.message || 'Failed to load program details');
@@ -144,6 +168,59 @@ function ProgramDetail() {
     } catch (err) {
       console.error('Error saving program:', err);
       // You could add a notification here
+    }
+  };
+  
+  const handleOpenTrackerDialog = () => {
+    if (!user) {
+      navigate('/login', { state: { from: `/programs/${id}` } });
+      return;
+    }
+    
+    setTrackerData({
+      program_name: program.title,
+      university: program.institution,
+      deadline: program.deadline,
+      status: 'Not Started',
+      decision: 'Pending',
+      notes: program.description || '',
+      stipend: program.stipend || '',
+      location: program.location || '',
+      duration: program.duration || '',
+      link: program.link || program.url || program.website || ''
+    });
+    setOpenTrackerDialog(true);
+  };
+
+  const handleCloseTrackerDialog = () => {
+    setOpenTrackerDialog(false);
+  };
+
+  const handleTrackerDataChange = (field) => (event) => {
+    setTrackerData(prev => ({
+      ...prev,
+      [field]: event.target.value
+    }));
+  };
+
+  const handleAddToTracker = async () => {
+    try {
+      const { error } = await supabase
+        .from('applications')
+        .insert([{
+          ...trackerData,
+          user_id: user.id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }]);
+        
+      if (error) throw error;
+      
+      handleCloseTrackerDialog();
+      // You could add a success notification here
+    } catch (err) {
+      console.error('Error adding to tracker:', err);
+      setError('Failed to add program to tracker');
     }
   };
   
@@ -198,7 +275,11 @@ function ProgramDetail() {
         <Alert severity="error" sx={{ mt: 4 }}>{error}</Alert>
       ) : program ? (
         <Box sx={{ mt: 4 }}>
-          <Typography variant="h4" component="h1" gutterBottom>
+          <Typography 
+            variant="h4" 
+            component="h1" 
+            gutterBottom
+          >
             {program.title}
           </Typography>
           
@@ -251,7 +332,7 @@ function ProgramDetail() {
                   wordBreak: 'break-word'
                 }}
               >
-                {program.description ? program.description : 'No description available.'}
+                {program.description}
               </Typography>
               
               {program.requirements && (
@@ -325,14 +406,40 @@ function ProgramDetail() {
                 )}
                 
                 {user && (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    fullWidth
+                    sx={{ mt: 2 }}
+                    onClick={() => navigate('/applications', { 
+                      state: { 
+                        program: {
+                          program_name: program.title,
+                          university: program.institution,
+                          deadline: program.deadline,
+                          status: 'Not Started',
+                          decision: 'Pending',
+                          notes: `${program.description}\n\nDuration: ${program.duration}\nStipend: ${program.stipend}\nLocation: ${program.location}`,
+                          link: program.link || program.url || program.website || ''
+                        }
+                      }
+                    })}
+                  >
+                    Add to Applications
+                  </Button>
+                )}
+
+                {program.link && (
                   <Button 
-                    variant={saved ? "contained" : "outlined"}
-                    color={saved ? "success" : "secondary"}
+                    variant="outlined" 
+                    color="primary" 
                     fullWidth 
                     sx={{ mt: 2 }}
-                    onClick={handleSaveProgram}
+                    href={program.link} 
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
-                    {saved ? "Saved" : "Save Program"}
+                    Visit Website
                   </Button>
                 )}
               </Paper>
@@ -351,6 +458,102 @@ function ProgramDetail() {
       ) : (
         <Alert severity="info" sx={{ mt: 4 }}>Program not found</Alert>
       )}
+
+      {/* Add to Tracker Dialog */}
+      <Dialog 
+        open={openTrackerDialog} 
+        onClose={handleCloseTrackerDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Add Program to Tracker</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+            <TextField
+              label="Program Name"
+              value={trackerData.program_name}
+              onChange={handleTrackerDataChange('program_name')}
+              fullWidth
+            />
+            <TextField
+              label="University"
+              value={trackerData.university}
+              onChange={handleTrackerDataChange('university')}
+              fullWidth
+            />
+            <TextField
+              label="Deadline"
+              type="date"
+              value={trackerData.deadline}
+              onChange={handleTrackerDataChange('deadline')}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              label="Status"
+              select
+              value={trackerData.status}
+              onChange={handleTrackerDataChange('status')}
+              fullWidth
+            >
+              <MenuItem value="Not Started">Not Started</MenuItem>
+              <MenuItem value="In Progress">In Progress</MenuItem>
+              <MenuItem value="Submitted">Submitted</MenuItem>
+              <MenuItem value="Accepted">Accepted</MenuItem>
+              <MenuItem value="Rejected">Rejected</MenuItem>
+            </TextField>
+            <TextField
+              label="Decision"
+              select
+              value={trackerData.decision}
+              onChange={handleTrackerDataChange('decision')}
+              fullWidth
+            >
+              <MenuItem value="Pending">Pending</MenuItem>
+              <MenuItem value="Accepted">Accepted</MenuItem>
+              <MenuItem value="Rejected">Rejected</MenuItem>
+            </TextField>
+            <TextField
+              label="Stipend"
+              value={trackerData.stipend}
+              onChange={handleTrackerDataChange('stipend')}
+              fullWidth
+            />
+            <TextField
+              label="Location"
+              value={trackerData.location}
+              onChange={handleTrackerDataChange('location')}
+              fullWidth
+            />
+            <TextField
+              label="Duration"
+              value={trackerData.duration}
+              onChange={handleTrackerDataChange('duration')}
+              fullWidth
+            />
+            <TextField
+              label="Website Link"
+              value={trackerData.link}
+              onChange={handleTrackerDataChange('link')}
+              fullWidth
+            />
+            <TextField
+              label="Notes"
+              value={trackerData.notes}
+              onChange={handleTrackerDataChange('notes')}
+              multiline
+              rows={4}
+              fullWidth
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseTrackerDialog}>Cancel</Button>
+          <Button onClick={handleAddToTracker} variant="contained" color="primary">
+            Add to Tracker
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 }

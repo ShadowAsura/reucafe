@@ -26,11 +26,13 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { ThemeContext } from '../contexts/ThemeContext';
 import { supabase } from '../supabase';
+import md5 from 'md5';
 import './Navbar.css';
 
 const pages = [
   { name: 'Programs', path: '/programs' },
   { name: 'Decisions', path: '/decisions' },
+  { name: 'Applications', path: '/applications' },
   { name: 'Patch Notes', path: '/patch-notes' },
 ];
 
@@ -40,31 +42,57 @@ function Navbar() {
   const [avatarUrl, setAvatarUrl] = useState('');
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [profile, setProfile] = useState(null);
   
-  const fetchUserAvatar = async () => {
+  const fetchProfile = async () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('avatar_url')
-        .eq('email', currentUser.email)
+        .select('*')
+        .eq('id', currentUser.id)
         .single();
       
-      if (error) {
-        console.error('Error fetching avatar:', error);
-        return;
-      }
+      if (error) throw error;
       
-      if (data && data.avatar_url) {
-        setAvatarUrl(data.avatar_url);
+      if (data) {
+        // Only use Gravatar if no custom avatar_url is set or if it's empty
+        const avatarUrl = data.avatar_url || `https://www.gravatar.com/avatar/${md5(data.email.toLowerCase())}?d=identicon`;
+        setProfile({
+          ...data,
+          avatar_url: avatarUrl
+        });
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error fetching profile:', error);
     }
   };
 
+  // Add a subscription to profile changes
   useEffect(() => {
     if (currentUser) {
-      fetchUserAvatar();
+      fetchProfile();
+      
+      // Subscribe to profile changes
+      const subscription = supabase
+        .channel('profile_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles',
+            filter: `id=eq.${currentUser.id}`
+          },
+          (payload) => {
+            console.log('Profile updated:', payload);
+            fetchProfile();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        subscription.unsubscribe();
+      };
     }
   }, [currentUser]);
   
@@ -177,9 +205,9 @@ function Navbar() {
             <Box sx={{ flexGrow: 0 }}>
               <IconButton onClick={handleMenu} sx={{ p: 0 }}>
                 <Avatar 
-                  alt={currentUser.email} 
-                  src={avatarUrl}
-                  sx={{ width: 40, height: 40 }}
+                  src={profile?.avatar_url}
+                  alt={profile?.username || currentUser?.email}
+                  sx={{ width: 32, height: 32, mr: 1 }}
                 />
               </IconButton>
               <Menu

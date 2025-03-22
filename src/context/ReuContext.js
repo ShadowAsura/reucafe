@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../supabase';
+import md5 from 'md5';
 
 const ReuContext = createContext();
 
@@ -11,181 +12,83 @@ export function ReuProvider({ children }) {
   const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [programSuggestions, setProgramSuggestions] = useState([]);
+  const [decisions, setDecisions] = useState([]);
+
+  const fetchPrograms = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch programs
+      const { data: programsData, error: programsError } = await supabase
+        .from('programs')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (programsError) {
+        console.error('Error with programs query:', programsError);
+        setError(programsError.message);
+      } else if (programsData) {
+        console.log(`Fetched ${programsData.length} programs`);
+        setPrograms(programsData);
+      }
+
+      // Fetch program suggestions (user-uploaded decisions)
+      const { data: suggestionsData, error: suggestionsError } = await supabase
+        .from('program_suggestions')
+        .select(`
+          *,
+          profile:profiles!program_suggestions_user_id_fkey (
+            id,
+            email,
+            username,
+            avatar_url
+          )
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (suggestionsError) {
+        console.error('Error with suggestions query:', suggestionsError);
+      } else if (suggestionsData) {
+        console.log(`Fetched ${suggestionsData.length} program suggestions`);
+        setProgramSuggestions(suggestionsData);
+      }
+
+      // Fetch decisions (user-uploaded decisions)
+      const { data: decisionsData, error: decisionsError } = await supabase
+        .from('decisions')
+        .select(`
+          *,
+          profiles!decisions_user_id_fkey (
+            id,
+            email,
+            username,
+            avatar_url
+          ),
+          programs!decisions_program_id_fkey (
+            id,
+            title,
+            institution
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (decisionsError) {
+        console.error('Error with decisions query:', decisionsError);
+      } else if (decisionsData) {
+        console.log(`Fetched ${decisionsData.length} decisions`);
+        setDecisions(decisionsData);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchPrograms = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch from Supabase (all programs)
-        let { data: programs, error: programsError } = await supabase
-          .from('programs')
-          .select('*')
-          .order('deadline', { ascending: true });  // Add ordering if needed
-        
-        if (programsError) {
-          console.error('Error with basic query:', programsError);
-          programs = [];
-        }
-        
-        console.log(`Fetched ${programs?.length || 0} programs from Supabase`);
-        
-        const supabasePrograms = (programs || []).map(program => {
-          
-          // Format deadline if it exists
-          let formattedDeadline = 'No deadline specified';
-          let isPastDeadline = false;
-          let rawDeadlineDate = null;
-          
-          if (program.deadline) {
-            try {
-              let deadlineDate;
-              
-              if (typeof program.deadline === 'string') {
-                deadlineDate = new Date(program.deadline);
-              } else if (program.deadline instanceof Date) {
-                deadlineDate = program.deadline;
-              }
-              
-              if (deadlineDate && !isNaN(deadlineDate.getTime())) {
-                rawDeadlineDate = deadlineDate;
-                formattedDeadline = deadlineDate.toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                });
-                isPastDeadline = deadlineDate < new Date();
-              } else {
-                formattedDeadline = 'No deadline specified';
-              }
-            } catch (err) {
-              console.log('Error formatting date:', err);
-              formattedDeadline = 'No deadline specified';
-            }
-          }
-          
-          // Normalize source field and rename specific sources
-          let normalizedSource = program.source ? program.source.toLowerCase() : 'unknown';
-          
-          // Rename sources as requested
-          if (normalizedSource === 'sciencepathways') {
-            normalizedSource = 'Pathways';
-          } else if (normalizedSource === 'googlesheets') {
-            normalizedSource = 'NU';
-          }
-          
-          // Combine url and link fields
-          const programUrl = program.url || program.link || program.website || '';
-          
-          // Use institution as location if location is not specified
-          const location = program.institution || 'Unknown Institution';
-          
-          return {
-            id: program.id,
-            ...program,
-            deadline: formattedDeadline,
-            rawDeadlineDate,
-            isPastDeadline,
-            source: normalizedSource,
-            url: programUrl,
-            location: location,
-            field: Array.isArray(program.field) ? program.field : (program.field ? [program.field] : [])
-          };
-        });
-        
-        // Also fetch user-suggested programs
-        let suggestions = [];
-        try {
-          let { data, error: suggestionsError } = await supabase
-            .from('program_suggestions')
-            .select('*');
-          
-          if (suggestionsError) {
-            console.error('Error with suggestions query:', suggestionsError);
-          } else if (data) {
-            suggestions = data;
-            console.log(`Fetched ${suggestions.length} program suggestions`);
-          }
-        } catch (suggestErr) {
-          console.error('Exception fetching suggestions:', suggestErr);
-        }
-        
-        const userSuggestions = (suggestions || []).map(suggestion => {
-          // Format deadline for suggestions too
-          let formattedDeadline = 'No deadline specified';
-          let isPastDeadline = false;
-          let rawDeadlineDate = null;
-          
-          if (suggestion.deadline) {
-            try {
-              let deadlineDate = new Date(suggestion.deadline);
-              
-              if (!isNaN(deadlineDate.getTime())) {
-                rawDeadlineDate = deadlineDate;
-                formattedDeadline = deadlineDate.toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                });
-                isPastDeadline = deadlineDate < new Date();
-              }
-            } catch (err) {
-              console.log('Error formatting suggestion date:', err);
-            }
-          }
-          
-          // Use institution as location
-          const location = suggestion.institution || 'Unknown Institution';
-          
-          return {
-            id: suggestion.id,
-            source: 'user suggested',
-            ...suggestion,
-            deadline: formattedDeadline,
-            rawDeadlineDate,
-            isPastDeadline,
-            location: location,
-            field: Array.isArray(suggestion.field) ? suggestion.field : (suggestion.field ? [suggestion.field] : [])
-          };
-        });
-        
-        // Combine all programs
-        const allPrograms = [
-          ...supabasePrograms,
-          ...userSuggestions
-        ];
-        
-        // Sort programs by deadline (future deadlines first)
-        allPrograms.sort((a, b) => {
-          // First check if either has isPastDeadline flag
-          if (a.isPastDeadline && !b.isPastDeadline) return 1;
-          if (!a.isPastDeadline && b.isPastDeadline) return -1;
-          
-          // If both have raw deadline dates, compare them
-          if (a.rawDeadlineDate && b.rawDeadlineDate) {
-            return a.rawDeadlineDate - b.rawDeadlineDate;
-          }
-          
-          // If only one has a raw deadline date, prioritize it
-          if (a.rawDeadlineDate && !b.rawDeadlineDate) return -1;
-          if (!a.rawDeadlineDate && b.rawDeadlineDate) return 1;
-          
-          // Finally sort by title
-          const titleA = a.title || '';
-          const titleB = b.title || '';
-          return titleA.localeCompare(titleB);
-        });
-        
-        setPrograms(allPrograms);
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching REU programs:', err);
-        setError('Failed to load REU programs');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchPrograms();
   }, []);
 
@@ -229,9 +132,12 @@ export function ReuProvider({ children }) {
 
   const value = {
     programs,
+    programSuggestions,
+    decisions,
     loading,
     error,
-    submitReuSuggestion
+    submitReuSuggestion,
+    fetchPrograms
   };
 
   return (
